@@ -28,6 +28,14 @@ namespace Autobot
         internal static extern bool SetProcessWorkingSetSize(IntPtr pProcess, int dwMinimumWorkingSetSize, int dwMaximumWorkingSetSize);
         [DllImport("KERNEL32.DLL", EntryPoint = "GetCurrentProcess", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
         internal static extern IntPtr GetCurrentProcess();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+        [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
         public Form1()
 
         {
@@ -59,6 +67,7 @@ namespace Autobot
         {
             btnStop.ForeColor = System.Drawing.Color.Black;
             btnStart.ForeColor = System.Drawing.Color.Black;
+            webBrowser1.ScriptErrorsSuppressed = true;
         }
 
         private void BtnStart_Click(object sender, EventArgs e) //Runs when start is pressed, allowing the loop to proceed
@@ -147,6 +156,18 @@ namespace Autobot
             btnStop.ForeColor = System.Drawing.Color.Black;
             btnStart.Enabled = true;
             btnStart.ForeColor = System.Drawing.Color.Black;
+            string EndChat = @"if (document.getElementsByClassName('disconnectbtn')[0].outerText.startsWith('Stop'))
+                                {
+                                    document.getElementsByClassName('disconnectbtn')[0].click();
+                                    document.getElementsByClassName('disconnectbtn')[0].click();
+                                }
+
+                                if (document.getElementsByClassName('disconnectbtn')[0].outerText.startsWith('Really'))
+                                {
+                                    document.getElementsByClassName('disconnectbtn')[0].click();
+                                }";
+
+            webBrowser1.Invoke(new Action(() => webBrowser1.Document.InvokeScript("eval", new object[] { EndChat })));//Runs the JS code in webview
             webBrowser1.Navigate("https://omegle.com/");
         }
 
@@ -190,13 +211,8 @@ namespace Autobot
                 webBrowser1.ScriptErrorsSuppressed = true;
             }
         }
-
-        private void webBrowser1_NewWindow_1(object sender, CancelEventArgs e)
-        {
-            webBrowser1.Navigate(webBrowser1.StatusText);
-            e.Cancel = true;
-        }
     }
+
     public static class FlashWindow //Class to flash the taskbar icon for CAPTCHA alerts
     {
         [DllImport("user32.dll")]
